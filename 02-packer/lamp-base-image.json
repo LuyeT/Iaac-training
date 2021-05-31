@@ -1,0 +1,40 @@
+{
+  "variables": {
+    "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+    "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "region": "eu-central-1",
+      "source_ami_filter": {
+        "filters": {
+          "image-id": "ami-073a8e22592a4a925"
+        },
+        "owners": ["125523088429"]
+      },
+      "instance_type": "t2.micro",
+      "ssh_username": "centos",
+      "security_group_id": "sg-055b3fccf8b0463b4",
+      "ami_name": "centos-lamp-example {{timestamp}}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "{{template_dir}}/../example.com.conf",
+      "destination": "/home/centos/example.com.conf"
+    },
+    {
+      "type": "file",
+      "source": "{{template_dir}}/../www.conf",
+      "destination": "/home/centos/www.conf"
+    },
+    {
+      "type": "shell",
+      "script": "{{template_dir}}/../01-scripts/configuration.sh",
+      "execute_command": "sudo {{.Path}}"
+    }
+  ]
+}
+

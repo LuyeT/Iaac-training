@@ -1,0 +1,151 @@
+---
+- name: Deploy lamp stack
+  hosts: lamp-stack
+  tasks:
+    - name: install python3-mysql
+      dnf:
+        name: python3-mysql
+        state: present
+      become: yes
+
+    - name: Fetch latest php code
+      git:
+        repo: 'https://github.com/LuyeT/Fantasy_Taverns-php'
+        dest: '/var/www/html/Fantasy_Taverns'
+      register: clone
+      become: yes
+
+    - name: Fetch latest mysql scripts
+      git:
+        repo: 'https://github.com/LuyeT/Fantasy_Taverns-mysql'
+        dest: '/home/centos/Fantasy_Taverns-mysql'
+      register: clone
+
+    - name: Enable services
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      become: yes
+      loop:
+        - firewalld
+        - mariadb
+        - httpd
+        - php-fpm
+
+    - name: Add firewall http rules
+      firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        state: enabled
+      become: yes
+      loop:
+        - http
+        - https
+      notify: Reload service firewalld
+
+    - name: Add firewall port rules
+      ansible.posix.firewalld:
+        port: "{{ item }}"
+        permanent: yes
+        state: enabled
+      become: yes
+      loop:
+        - 8080/tcp
+        - 10000/tcp
+      notify: Reload service firewalld
+
+    - name: Test sql root credentials
+      stat:
+        path: /var/www/sqlroot.ini
+      register: sql_root_credentials
+
+    - name: Test sql centos credentials
+      stat:
+        path: /var/www/sqlroot.ini
+      register: sql_centos_credentials
+
+    - name: Generate mysql root password
+      shell: pwgen 28 1
+      register: passwd_mysql_root
+      when: not sql_root_credentials.stat.exists
+
+    - name: Set mysql-root
+      mysql_user:
+        user: root
+        password: "{{ passwd_mysql_root.stdout }}"
+      become: yes
+      when: not sql_root_credentials.stat.exists
+
+    - name: Store mysql-root
+      template:
+        src: ./templates/mysql-root-cred.cnf.j2
+        dest: /var/www/sqlroot.ini
+        owner: root
+        group: root
+        mode: '0600'
+        force: no
+      when: not sql_root_credentials.stat.exists
+      become: yes
+
+    - name: Import Fantasy_Taverns db
+      shell: "mysql --defaults-extra-file=/var/www/sqlroot.ini < ./master.sql"
+  #      mysql_db:
+  #        config_file: /var/www/sqlroot.ini
+  #        state: import
+  #        name: all
+  #        target: /home/centos/Fantasy_Taverns-mysql/master.sql
+      args:
+        chdir: /home/centos/Fantasy_Taverns-mysql
+      become: yes
+      notify: Create mysql user centos
+
+    - name: Generate mysql centos password
+      shell: pwgen 28 1
+      register: passwd_mysql_centos
+      when: not sql_centos_credentials.stat.exists
+      notify:
+        - Set mysql-centos
+        - Store mysql-centos
+
+    - name: Setsebool httpd permissions
+      seboolean:
+        name: "{{ item }}"
+        state: yes
+        persistent: yes
+      become: yes
+      loop:
+      - httpd_can_network_connect_db
+
+  handlers:
+  - name: Reload service firewalld
+    systemd:
+      name: firewalld
+      state: reloaded
+    become: yes
+
+  - name: Set mysql-centos
+    mysql_user:
+      config_file: /var/www/sqlroot.ini
+      user: centos
+      password: "{{ passwd_mysql_centos.stdout }}"
+    become: yes
+
+  - name: Store mysql-centos
+    template:
+      src: ./templates/mysql-centos-cred.cnf.j2
+      dest: /var/www/sqlcentos.ini
+      owner: apache
+      group: apache
+      mode: '0600'
+      force: no
+    become: yes
+
+  - name: Create mysql user centos
+    mysql_user:
+      state: present
+      name: centos
+      config_file: /var/www/sqlroot.ini
+      priv:
+        'Fantasy_Taverns.*': 'ALL,GRANT'
+    become: yes
