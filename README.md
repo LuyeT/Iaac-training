@@ -1,19 +1,3 @@
-ROADMAP{
-
-#Rewrite scripts with error handling
-#Rewrite deployment script to do secure SQL installation
-#Rewrite subscript to do secure SQL installation
-distribute mysql to seperate server
-#Rewrite 02-packer for AWS
-#Rewrite 03-terraform for AWS
-#04-Ansible
-06-Docker
-07-Docker Compose
-08-Kubernetes
-Implement HashiCorp Vault
-}
-Redo everything above while using Vault for secrets
-
 Instructions:
 script deployment:
 ---
@@ -44,3 +28,20 @@ ansible deployment:
 
 ---
   basic php/mysql demo should be available at http://{ip of instance}/Fantasy_Taverns-php/index.php for every one of these approaches
+
+##ROADMAP
+
+[done]     Rewrite scripts with error handling
+[done]     Rewrite deployment script to do secure SQL installation
+[done]     Rewrite subscript to do secure SQL installation
+distribute mysql to seperate server
+[done]     Rewrite 02-packer for AWS
+[done]     Rewrite 03-terraform for AWS
+[done]     04-Ansible
+06-Docker
+07-Docker Compose
+08-Kubernetes
+Implement HashiCorp Vault
+
+Redo everything above while using Vault for secrets
+
