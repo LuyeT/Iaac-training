@@ -1,12 +1,10 @@
 Instructions:
 script deployment:
----
   manually provision an instance with centos8stream image
   copy ./example.com.conf ./www.conf ./01-scripts/{configuration.sh , deployment.sh, mariadb-secure-installation.sh} to your instance
   ssh to your instance, chmod +x the scripts
   run configuration.sh, then deployment.sh
 packer snapshot:
----
   export={your AWS_ACCESS_KEY_ID}
   export={your AWS_SECRET_ACCESS_KEY}
   cd 02-packer/
@@ -15,18 +13,15 @@ packer snapshot:
   copy deployment.sh mariadb-secure-installation.sh to new instance
   run deployment script from instance
 terraform provision:
----
   cd to 03-terraform
   change the ami field of example.tf to the ami of the snapshot you created
   run terraform apply (after configuring keys to your AWS account)
   follow last 2 steps of packer snapshot instructions
 ansible deployment:
----
   provision instance with terraform
   change ansible-host in inventory.yml to match the IP of your instance
   run ansible-playbook DeployPlaybook.yml
 
----
   basic php/mysql demo should be available at http://{ip of instance}/Fantasy_Taverns-php/index.php for every one of these approaches
 
 ##ROADMAP
